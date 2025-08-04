@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analysis & Clustering Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .step-card {
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            @apply bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-300;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors;
+        }
+        #data-preview-container, #results-data-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #data-preview-table thead, #results-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-900 ml-3">Insight Extractor</h1>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Introduction -->
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Unlock Insights from Your Survey Data</h2>
+            <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">
+                A powerful tool to help you perform complex analyses like k-means clustering and cross-tabulations, with clear explanations every step of the way.
+            </p>
+        </div>
+
+        <!-- Step 1: Upload Data -->
+        <div id="step1" class="step-card bg-white p-8 rounded-xl shadow-md mb-8">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold text-lg">1</div>
+                <h3 class="ml-4 text-2xl font-bold text-gray-900">Upload Your Dataset</h3>
+            </div>
+            <p class="text-gray-600 mb-4">
+                Start by uploading your survey data in **.sav** or **.csv** format. Your data is sent to our backend for analysis and is not stored.
+            </p>
+            <div class="mt-4 flex justify-center items-center w-full">
+                <label for="file-upload" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V6a4 4 0 014-4h1.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H13.5a4 4 0 014 4v1.586a1 1 0 01-.293.707l-1.414 1.414a1 1 0 00-.293.707V16m-7 4h14M7 16l-4 4m0 0l4-4m-4 4h4"></path></svg>
+                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                        <p class="text-xs text-gray-500">SPSS (.sav) or CSV (.csv) files</p>
+                    </div>
+                    <input id="file-upload" type="file" class="hidden" accept=".sav,.csv" />
+                </label>
+            </div>
+            <div id="file-info" class="mt-4 text-center"></div>
+            <div id="data-preview-section" class="mt-6 hidden">
+                <h4 class="text-lg font-bold text-gray-800 mb-2">Data Preview (First 5 Rows)</h4>
+                <div id="data-preview-container" class="border rounded-lg overflow-x-auto">
+                    <table id="data-preview-table" class="min-w-full divide-y divide-gray-200"></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Choose Analysis -->
+        <div id="step2" class="step-card bg-white p-8 rounded-xl shadow-md mb-8 hidden">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold text-lg">2</div>
+                <h3 class="ml-4 text-2xl font-bold text-gray-900">Choose Your Analysis</h3>
+            </div>
+            <p class="text-gray-600 mb-6">Select the type of analysis you want to perform on your dataset.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-lg transition-all">
+                    <h4 class="text-xl font-bold text-gray-900">K-Means Clustering</h4>
+                    <p class="text-gray-600 mt-2 mb-4">Group your data into a specified number of clusters based on similarity. Ideal for market segmentation or identifying patterns.</p>
+                    <button id="select-kmeans" class="btn-primary w-full">Select</button>
+                </div>
+                <div class="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-lg transition-all">
+                    <h4 class="text-xl font-bold text-gray-900">Cross-Tabulation</h4>
+                    <p class="text-gray-600 mt-2 mb-4">Analyze the relationship between two categorical variables in your dataset. Useful for understanding contingencies.</p>
+                    <button id="select-crosstab" class="btn-primary w-full">Select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Configure & Run Analysis -->
+        <div id="step3" class="step-card bg-white p-8 rounded-xl shadow-md mb-8 hidden">
+             <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold text-lg">3</div>
+                <h3 class="ml-4 text-2xl font-bold text-gray-900">Configure & Run</h3>
+            </div>
+            <div id="kmeans-config" class="hidden space-y-4">
+                 <p class="text-gray-600">Set the parameters for K-Means Clustering. K-Means works best with numerical data. Non-numeric data in selected columns will be ignored.</p>
+                 <div>
+                    <label for="kmeans-k" class="block text-sm font-medium text-gray-700">Number of Clusters (K):</label>
+                    <input type="number" id="kmeans-k" name="kmeans-k" value="3" min="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                 </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Select columns for clustering:</label>
+                    <div id="kmeans-columns" class="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2"></div>
+                 </div>
+                 <button id="run-kmeans" class="btn-primary">Run K-Means</button>
+            </div>
+            <div id="crosstab-config" class="hidden space-y-4">
+                <p class="text-gray-600">Select two categorical variables for Cross-Tabulation.</p>
+                <div>
+                    <label for="crosstab-var1" class="block text-sm font-medium text-gray-700">Variable 1 (Rows):</label>
+                    <select id="crosstab-var1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></select>
+                </div>
+                 <div>
+                    <label for="crosstab-var2" class="block text-sm font-medium text-gray-700">Variable 2 (Columns):</label>
+                    <select id="crosstab-var2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></select>
+                </div>
+                <button id="run-crosstab" class="btn-primary">Run Cross-Tab</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="step4" class="step-card bg-white p-8 rounded-xl shadow-md hidden">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 bg-indigo-500 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold text-lg">4</div>
+                <h3 class="ml-4 text-2xl font-bold text-gray-900">Analysis Results</h3>
+            </div>
+            <div id="results-output"></div>
+        </div>
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        const BACKEND_URL = ''; // Leave this empty for production
+
+        // --- DOM Elements ---
+        const fileUpload = document.getElementById('file-upload');
+        const fileInfo = document.getElementById('file-info');
+        const dataPreviewSection = document.getElementById('data-preview-section');
+        const dataPreviewTable = document.getElementById('data-preview-table');
+        const step1 = document.getElementById('step1'), step2 = document.getElementById('step2'), step3 = document.getElementById('step3'), step4 = document.getElementById('step4');
+        const selectKmeansBtn = document.getElementById('select-kmeans'), selectCrosstabBtn = document.getElementById('select-crosstab');
+        const kmeansConfig = document.getElementById('kmeans-config'), crosstabConfig = document.getElementById('crosstab-config');
+        const kmeansColumnsContainer = document.getElementById('kmeans-columns');
+        const crosstabVar1Select = document.getElementById('crosstab-var1'), crosstabVar2Select = document.getElementById('crosstab-var2');
+        const runKmeansBtn = document.getElementById('run-kmeans'), runCrosstabBtn = document.getElementById('run-crosstab');
+        const resultsOutput = document.getElementById('results-output');
+
+        // --- State ---
+        let dataset = null;
+        let headers = [];
+        let metadata = {}; // New: To store labels from .sav files
+
+        // --- Event Listeners ---
+        fileUpload.addEventListener('change', handleFileUpload);
+        selectKmeansBtn.addEventListener('click', () => selectAnalysis('kmeans'));
+        selectCrosstabBtn.addEventListener('click', () => selectAnalysis('crosstab'));
+        runKmeansBtn.addEventListener('click', runKMeans);
+        runCrosstabBtn.addEventListener('click', runCrossTab);
+        
+        // --- Core Functions ---
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.sav') && !file.name.endsWith('.csv')) {
+                fileInfo.innerHTML = `<p class="text-red-600 font-semibold">Please upload a valid .sav or .csv file.</p>`;
+                resetToStep1();
+                return;
+            }
+
+            fileInfo.innerHTML = `<p class="text-blue-600 font-semibold">Uploading and processing ${file.name}...</p>`;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // When BACKEND_URL is empty, fetch will request the /api/upload path on the same host.
+                const response = await fetch(`${BACKEND_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'An unknown error occurred during file processing.');
+                }
+                
+                dataset = result.data;
+                headers = result.headers;
+                metadata = result.metadata;
+
+                fileInfo.innerHTML = `<p class="text-green-600 font-semibold">Successfully processed: ${file.name}</p><p class="text-sm text-gray-500">${dataset.length} rows and ${headers.length} columns found.</p>`;
+                
+                displayDataPreview();
+                populateConfigOptions();
+                showStep(step2);
+
+            } catch (error) {
+                fileInfo.innerHTML = `<p class="text-red-600 font-semibold">Error: ${error.message}</p>`;
+                resetToStep1();
+            }
+        }
+
+        async function runKMeans() {
+            const k = document.getElementById('kmeans-k').value;
+            const selectedColumns = Array.from(document.querySelectorAll('#kmeans-columns input:checked')).map(cb => cb.value);
+            
+            if (selectedColumns.length === 0) {
+                alert('Please select at least one column for clustering.');
+                return;
+            }
+
+            setLoading('kmeans', true);
+            resultsOutput.innerHTML = '<p class="text-blue-600">Running K-Means clustering...</p>';
+            showStep(step4);
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/kmeans`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: dataset, k: k, columns: selectedColumns })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'An unknown error occurred.');
+                }
+
+                displayKMeansResults(result);
+
+            } catch (error) {
+                resultsOutput.innerHTML = `<p class="text-red-600 font-semibold">Error: ${error.message}</p>`;
+            } finally {
+                setLoading('kmeans', false);
+            }
+        }
+
+        async function runCrossTab() {
+            const var1 = crosstabVar1Select.value;
+            const var2 = crosstabVar2Select.value;
+            
+            if (var1 === var2) {
+                alert('Please select two different variables.');
+                return;
+            }
+
+            setLoading('crosstab', true);
+            resultsOutput.innerHTML = '<p class="text-blue-600">Running cross-tabulation...</p>';
+            showStep(step4);
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/crosstab`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: dataset, var1: var1, var2: var2 })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'An unknown error occurred.');
+                }
+
+                displayCrosstabResults(result.table);
+
+            } catch (error) {
+                resultsOutput.innerHTML = `<p class="text-red-600 font-semibold">Error: ${error.message}</p>`;
+            } finally {
+                setLoading('crosstab', false);
+            }
+        }
+
+        // --- UI & Display Functions ---
+        function displayDataPreview() {
+            const displayHeaders = headers.map(h => metadata.variable_labels?.[h] || h);
+            dataPreviewTable.innerHTML = generateTableHTML(displayHeaders, headers, dataset.slice(0, 5));
+            dataPreviewSection.classList.remove('hidden');
+        }
+        
+        function populateConfigOptions() {
+            kmeansColumnsContainer.innerHTML = '';
+            crosstabVar1Select.innerHTML = '';
+            crosstabVar2Select.innerHTML = '';
+            
+            headers.forEach(header => {
+                const displayLabel = metadata.variable_labels?.[header] || header;
+                const isNumeric = dataset.length > 0 && typeof dataset[0][header] === 'number';
+
+                const checkboxId = `col-${header.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                kmeansColumnsContainer.innerHTML += `
+                    <div class="flex items-center">
+                        <input id="${checkboxId}" name="kmeans_column" type="checkbox" value="${header}" ${isNumeric ? 'checked' : ''} class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="${checkboxId}" class="ml-3 block text-sm text-gray-900">${displayLabel} ${!isNumeric ? '<span class="text-xs text-gray-400">(non-numeric)</span>' : ''}</label>
+                    </div>`;
+                
+                const option = `<option value="${header}">${displayLabel}</option>`;
+                crosstabVar1Select.innerHTML += option;
+                crosstabVar2Select.innerHTML += option;
+            });
+
+            if (crosstabVar2Select.options.length > 1) crosstabVar2Select.selectedIndex = 1;
+        }
+
+        function displayCrosstabResults(tableData) {
+            const { index, columns, data } = tableData;
+            const var1 = crosstabVar1Select.value;
+            const var2 = crosstabVar2Select.value;
+            
+            const var1ValueLabels = metadata.value_labels?.[var1] || {};
+            const var2ValueLabels = metadata.value_labels?.[var2] || {};
+
+            let html = '<table class="min-w-full divide-y divide-gray-200">';
+            html += '<thead class="bg-gray-100"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>';
+            columns.forEach(col => html += `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${var2ValueLabels[col] || col}</th>`);
+            html += '</tr></thead>';
+            html += '<tbody class="bg-white divide-y divide-gray-200">';
+            data.forEach((row, i) => {
+                const rowIndexLabel = var1ValueLabels[index[i]] || index[i];
+                html += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rowIndexLabel}</td>`;
+                row.forEach(cell => html += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cell}</td>`);
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            resultsOutput.innerHTML = html;
+        }
+
+        function displayKMeansResults(result) {
+            const summaryHeaders = Object.keys(result.summary[0]);
+            
+            const dataHeaders = [...headers, 'Cluster'];
+            const displayDataHeaders = dataHeaders.map(h => metadata.variable_labels?.[h] || h);
+
+            resultsOutput.innerHTML = `
+                <h4 class="text-lg font-bold text-gray-800 mb-2">Cluster Summary</h4>
+                ${generateTableHTML(summaryHeaders, summaryHeaders, result.summary)}
+                <h4 class="text-lg font-bold text-gray-800 mt-6 mb-2">Data with Cluster Assignments (First 20 Rows)</h4>
+                <div id="results-data-container" class="border rounded-lg overflow-x-auto">
+                    ${generateTableHTML(displayDataHeaders, dataHeaders, result.dataWithClusters.slice(0, 20), 'results-table')}
+                </div>
+            `;
+        }
+
+        function generateTableHTML(displayHeaders, rawHeaders, data, tableId = '') {
+            let html = `<table id="${tableId}" class="min-w-full divide-y divide-gray-200">`;
+            html += '<thead class="bg-gray-100"><tr>';
+            displayHeaders.forEach(h => html += `<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${h}</th>`);
+            html += '</tr></thead>';
+            html += '<tbody class="bg-white divide-y divide-gray-200">';
+            data.forEach(row => {
+                html += '<tr>';
+                rawHeaders.forEach(header => {
+                    const value = row[header];
+                    const valueLabel = metadata.value_labels?.[header]?.[value] || value;
+                    html += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${valueLabel !== null && valueLabel !== undefined ? valueLabel : ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        // --- Helper Functions ---
+        function showStep(stepElement) {
+            stepElement.classList.remove('hidden');
+            stepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hideStep(stepElement) {
+            stepElement.classList.add('hidden');
+        }
+        
+        function resetToStep1() {
+            hideStep(step2);
+            hideStep(step3);
+            hideStep(step4);
+            dataPreviewSection.classList.add('hidden');
+            dataset = null;
+            headers = [];
+            metadata = {};
+        }
+
+        function selectAnalysis(type) {
+            kmeansConfig.classList.add('hidden');
+            crosstabConfig.classList.add('hidden');
+            if (type === 'kmeans') {
+                kmeansConfig.classList.remove('hidden');
+            } else if (type === 'crosstab') {
+                crosstabConfig.classList.remove('hidden');
+            }
+            showStep(step3);
+            hideStep(step4);
+        }
+
+        function setLoading(type, isLoading) {
+            if (type === 'kmeans') runKmeansBtn.disabled = isLoading;
+            if (type === 'crosstab') runCrosstabBtn.disabled = isLoading;
+        }
+    </script>
+
+</body>
+</html>
